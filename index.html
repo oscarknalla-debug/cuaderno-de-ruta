@@ -674,7 +674,7 @@ function fileToBase64(file){
   // Redimensiona y comprime la imagen antes de enviarla, para no superar
   // el límite de tamaño de las funciones de Netlify (fotos de móvil sin tocar
   // suelen pesar 3-6 MB, y con dos imágenes se supera fácilmente el límite).
-  const MAX_DIM = 1600;
+  const MAX_DIM = 2200;
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -688,7 +688,7 @@ function fileToBase64(file){
         const canvas = document.createElement("canvas");
         canvas.width = width; canvas.height = height;
         canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.72);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.88);
         resolve(dataUrl.split(",")[1]);
       };
       img.onerror = () => reject(new Error("No se pudo procesar la imagen"));
