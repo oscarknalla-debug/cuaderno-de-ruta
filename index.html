@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cuaderno de Ruta</title>
+<meta name="theme-color" content="#15181b">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --asphalt:#15181b; --asphalt2:#1d2124; --card:#202427; --border:#2c3135;
+    --ink:#eae7df; --inkDim:#9a9d9f; --amber:#f2a900; --amberDim:#8a6410;
+    --teal:#4f9d8f; --rust:#d1495b; --plate:#0b3d91;
+  }
+  *{box-sizing:border-box;}
+  html,body{overflow-x:hidden;max-width:100%;}
+  body{margin:0;background:var(--asphalt);color:var(--ink);font-family:Inter,system-ui,sans-serif;-webkit-tap-highlight-color:transparent;}
+  .wrap{max-width:720px;margin:0 auto;padding:14px;display:flex;flex-direction:column;gap:16px;padding-bottom:60px;width:100%;}
+  h1{font-size:22px;margin:0;letter-spacing:-0.02em;}
+  .sub{font-size:13px;color:var(--inkDim);margin:2px 0 0;}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;}
+  .btn{border-radius:10px;padding:9px 16px;font-size:14px;font-weight:600;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+  .btn-amber{background:var(--amber);color:#1a1400;}
+  .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--border);}
+  .btn-danger{background:var(--rust);color:#fff;}
+  .btn-sm{padding:7px 12px;font-size:12px;border-radius:8px;}
+  .row{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;}
+  .plate{flex-shrink:0;width:170px;border-radius:8px;overflow:hidden;display:flex;border:2px solid transparent;text-align:left;background:none;cursor:pointer;padding:0;}
+  .plate.active{border-color:var(--amber);}
+  .plate-blue{width:12px;background:var(--plate);}
+  .plate-body{flex:1;background:#f4f1ea;color:#111;padding:8px 10px;}
+  .plate-num{font-family:'Courier New',monospace;font-weight:800;font-size:16px;letter-spacing:1px;}
+  .plate-sub{font-size:10px;opacity:.7;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .plate-add{flex-shrink:0;width:74px;border:1px dashed var(--border);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--inkDim);font-size:11px;background:none;cursor:pointer;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;min-width:0;}
+  .grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;min-width:0;}
+  label{display:flex;flex-direction:column;gap:5px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--inkDim);min-width:0;}
+  input,select,textarea{background:var(--asphalt);border:1px solid var(--border);color:var(--ink);border-radius:8px;padding:9px 10px;font-size:14px;font-family:inherit;width:100%;max-width:100%;}
+  textarea{resize:vertical;min-height:64px;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--amber);}
+  .form-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px;}
+  .tabs{display:flex;gap:8px;margin-bottom:14px;}
+  .tab{flex:1;padding:9px;border-radius:8px;text-align:center;font-size:13px;font-weight:600;border:1px solid var(--border);color:var(--inkDim);background:var(--asphalt);cursor:pointer;}
+  .tab.active{border-color:var(--amber);color:var(--amber);background:var(--amberDim);}
+  .detail-top{display:flex;justify-content:space-between;align-items:flex-start;}
+  .detail-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 16px;font-size:13px;margin-top:10px;min-width:0;}
+  .dim{color:var(--inkDim);}
+  .datewarn{color:var(--rust) !important;}
+  .gauge-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;margin-top:10px;}
+  .history-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);gap:10px;}
+  .history-item:last-child{border-bottom:none;}
+  .history-left{display:flex;align-items:center;gap:10px;min-width:0;flex:1;}
+  .history-left>div:last-child{min-width:0;flex:1;}
+  .trunc1{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .icon-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+  .filters{display:flex;gap:6px;flex-wrap:wrap;}
+  .chip{font-size:11px;padding:5px 10px;border-radius:999px;border:1px solid var(--border);color:var(--inkDim);background:none;cursor:pointer;text-transform:capitalize;}
+  .chip.active{border-color:var(--amber);color:var(--amber);background:var(--amberDim);}
+  .photo-box{background:var(--asphalt);border:1px dashed var(--border);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;grid-column:1/-1;min-width:0;}
+  .photo-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:8px;padding:12px 6px;font-size:11px;border:1px solid var(--border);cursor:pointer;color:var(--inkDim);min-width:0;text-align:center;}
+  .photo-btn.filled{color:var(--amber);border-color:var(--amber);}
+  .empty{text-align:center;color:var(--inkDim);font-size:13px;padding:24px 0;}
+  .banner{background:#3a1f22;color:#ffb3ba;border-radius:10px;padding:10px 12px;font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+  .icon-btn{background:none;border:none;color:var(--inkDim);cursor:pointer;padding:4px;}
+  h2{font-size:17px;margin:0;}
+  h3{font-size:14px;margin:0;color:var(--inkDim);}
+  .consumo-box{grid-column:1/-1;background:var(--asphalt);border:1px solid var(--border);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;font-size:12px;}
+  .close-x{position:absolute;}
+  svg text{font-family:'Courier New',monospace;}
+  @media (max-width:420px){
+    .grid2{grid-template-columns:1fr;}
+    .detail-grid{grid-template-columns:1fr;}
+    .plate{width:150px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+// ---------- Supabase (cuenta + almacenamiento en la nube) ----------
+const SUPABASE_URL = "https://aaywapvektksxtrfjfbg.supabase.co";
+const SUPABASE_KEY = "sb_publishable_o2Nt1zHMyUBizh1nXpF8SA_cBMlbRnS";
+const SESSION_KEY = "cdr_session";
+
+function getStoredSession(){ try{ return JSON.parse(localStorage.getItem(SESSION_KEY)); }catch{ return null; } }
+function storeSession(s){ if(s) localStorage.setItem(SESSION_KEY, JSON.stringify(s)); else localStorage.removeItem(SESSION_KEY); }
+
+async function authRequest(path, body){
+  const res = await fetch(`${SUPABASE_URL}/auth/v1${path}`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error_description || data.msg || data.error || "Error de autenticación");
+  return data;
+}
+const supaSignUp = (email, password) => authRequest("/signup", { email, password });
+const supaSignIn = (email, password) => authRequest("/token?grant_type=password", { email, password });
+const supaRefresh = (refresh_token) => authRequest("/token?grant_type=refresh_token", { refresh_token });
+
+async function apiRequest(path, options = {}){
+  const call = (token) => fetch(`${SUPABASE_URL}${path}`, {
+    ...options,
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...(options.headers||{}) },
+  });
+  let res = await call(state.session.access_token);
+  if(res.status === 401){
+    try{
+      const refreshed = await supaRefresh(state.session.refresh_token);
+      storeSession(refreshed);
+      state.session = refreshed;
+      res = await call(refreshed.access_token);
+    } catch(e){
+      storeSession(null);
+      state.session = null;
+      render();
+      throw new Error("Sesión caducada, vuelve a iniciar sesión.");
+    }
+  }
+  if(!res.ok){
+    const err = await res.json().catch(()=>({}));
+    throw new Error(err.message || err.msg || `Error ${res.status}`);
+  }
+  if(res.status===204) return null;
+  const text = await res.text();
+  if(!text) return null;
+  return JSON.parse(text);
+}
+
+async function fetchVehicles(){ const rows = await apiRequest("/rest/v1/vehicles?select=data&order=created_at.asc"); return rows.map(r=>r.data); }
+async function fetchRecords(){ const rows = await apiRequest("/rest/v1/records?select=data&order=created_at.asc"); return rows.map(r=>r.data); }
+async function insertRow(table, obj){ await apiRequest(`/rest/v1/${table}`, { method:"POST", headers:{Prefer:"return=minimal"}, body: JSON.stringify([{ id: obj.id, user_id: state.session.user.id, data: obj }]) }); }
+async function updateRow(table, obj){ await apiRequest(`/rest/v1/${table}?id=eq.${obj.id}`, { method:"PATCH", headers:{Prefer:"return=minimal"}, body: JSON.stringify({ data: obj }) }); }
+async function deleteRowRemote(table, id){ await apiRequest(`/rest/v1/${table}?id=eq.${id}`, { method:"DELETE" }); }
+
+// ---- Caché local (guarda todo en el propio móvil para abrir al instante y funcionar sin conexión) ----
+const CACHE_KEY = "cdr_cache_v1";
+const PENDING_KEY = "cdr_pending_v1";
+
+function cacheKeyForUser(){ const uidUser = getStoredSession()?.user?.id; return uidUser ? `${CACHE_KEY}_${uidUser}` : CACHE_KEY; }
+function pendingKeyForUser(){ const uidUser = getStoredSession()?.user?.id; return uidUser ? `${PENDING_KEY}_${uidUser}` : PENDING_KEY; }
+
+function loadCache(){ try{ return JSON.parse(localStorage.getItem(cacheKeyForUser())) || null; } catch{ return null; } }
+function saveCache(){ try{ localStorage.setItem(cacheKeyForUser(), JSON.stringify({ vehicles: state.vehicles, records: state.records, selectedId: state.selectedId })); } catch{} }
+
+function loadPending(){ try{ return JSON.parse(localStorage.getItem(pendingKeyForUser())) || []; } catch{ return []; } }
+function savePending(){ try{ localStorage.setItem(pendingKeyForUser(), JSON.stringify(pendingQueue)); } catch{} }
+let pendingQueue = [];
+
+function queuePending(op){
+  pendingQueue.push(op);
+  savePending();
+  render();
+  flushPending();
+}
+
+async function flushPending(){
+  if(!state.session || !navigator.onLine || pendingQueue.length===0) return;
+  const queue = pendingQueue;
+  pendingQueue = [];
+  for(const op of queue){
+    try{
+      if(op.type==="insert") await insertRow(op.table, op.obj);
+      else if(op.type==="update") await updateRow(op.table, op.obj);
+      else if(op.type==="delete") await deleteRowRemote(op.table, op.id);
+    } catch(e){
+      pendingQueue.push(op); // se reintenta más tarde
+    }
+  }
+  savePending();
+  render();
+}
+window.addEventListener("online", flushPending);
+
+let state = {
+  session: getStoredSession(),
+  vehicles: [],
+  records: [],
+  selectedId: null,
+  showVehicleForm: false,
+  editingVehicle: null,
+  showRecordForm: false,
+  editingRecord: null,
+  historyFilter: "todos",
+  loadingData: false,
+  authMode: "login",
+  authError: null,
+  authInfo: null,
+  authLoading: false,
+};
+
+const FUEL_TYPES = ["Gasolina 95","Gasolina 98","Diésel","Diésel+","GLP","Eléctrico"];
+const REPAIR_TYPES = ["Motor","Frenos","Suspensión","Neumáticos","Eléctrico","Carrocería","Transmisión","Otro"];
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+function fmtDate(d){ if(!d) return "—"; const dt=new Date(d+"T00:00:00"); return dt.toLocaleDateString("es-ES",{day:"2-digit",month:"short",year:"numeric"}); }
+function daysUntil(d){ if(!d) return null; const today=new Date(); today.setHours(0,0,0,0); const t=new Date(d+"T00:00:00"); return Math.round((t-today)/86400000); }
+function euros(n){ const v=Number(n)||0; return v.toLocaleString("es-ES",{style:"currency",currency:"EUR"}); }
+function esc(s){ return (s??"").toString().replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+function set(patch){ state = {...state, ...patch}; render(); }
+
+async function loadAllData(){
+  // 1) Arranca al instante con lo que ya haya guardado en el propio móvil
+  pendingQueue = loadPending();
+  const cache = loadCache();
+  if(cache){
+    state.vehicles = cache.vehicles || [];
+    state.records = cache.records || [];
+    if(!state.selectedId) state.selectedId = cache.selectedId || (state.vehicles[0]?.id ?? null);
+    state.loadingData = false;
+    render();
+  } else {
+    state.loadingData = true; render();
+  }
+
+  // 2) Si hay conexión, intenta subir lo pendiente y refrescar desde la nube
+  if(!navigator.onLine){
+    state.loadingData = false; render();
+    return;
+  }
+  await flushPending();
+  if(pendingQueue.length===0){
+    try{
+      const [v, r] = await Promise.all([fetchVehicles(), fetchRecords()]);
+      state.vehicles = v; state.records = r;
+      if(v.length && !state.selectedId) state.selectedId = v[0].id;
+      saveCache();
+    } catch(e){
+      if(!cache){ alert("No se pudieron cargar los datos: " + (e?.message||e)); }
+      // si ya había caché, seguimos con lo que tenemos guardado en el móvil
+    }
+  }
+  state.loadingData = false; render();
+}
+
+async function doSignUp(){
+  const email = document.getElementById("auth_email").value;
+  const password = document.getElementById("auth_password").value;
+  if(!email || !password){ set({authError:"Rellena email y contraseña"}); return; }
+  set({authLoading:true, authError:null, authInfo:null});
+  try{
+    const data = await supaSignUp(email, password);
+    if(data.access_token){
+      storeSession(data);
+      state.session = data;
+      await loadAllData();
+      set({authLoading:false});
+    } else {
+      set({authLoading:false, authInfo:"Cuenta creada. Revisa tu correo para confirmarla y luego inicia sesión.", authMode:"login"});
+    }
+  } catch(e){
+    set({authLoading:false, authError: e?.message || "Error al crear la cuenta"});
+  }
+}
+async function doSignIn(){
+  const email = document.getElementById("auth_email").value;
+  const password = document.getElementById("auth_password").value;
+  if(!email || !password){ set({authError:"Rellena email y contraseña"}); return; }
+  set({authLoading:true, authError:null, authInfo:null});
+  try{
+    const data = await supaSignIn(email, password);
+    storeSession(data);
+    state.session = data;
+    await loadAllData();
+    set({authLoading:false});
+  } catch(e){
+    set({authLoading:false, authError: e?.message || "Error al iniciar sesión"});
+  }
+}
+function doLogout(){
+  storeSession(null);
+  set({ session:null, vehicles:[], records:[], selectedId:null });
+}
+
+async function addVehicle(v){
+  const nv = {...v, id: uid()};
+  state.vehicles = [...state.vehicles, nv];
+  saveCache();
+  set({ selectedId: nv.id, showVehicleForm:false, editingVehicle:null });
+  try{ await insertRow("vehicles", nv); } catch(e){ queuePending({type:"insert", table:"vehicles", obj:nv}); }
+}
+async function updateVehicle(v){
+  const updated = {...v, id: state.editingVehicle.id};
+  state.vehicles = state.vehicles.map(x => x.id===state.editingVehicle.id ? updated : x);
+  saveCache();
+  set({ showVehicleForm:false, editingVehicle:null });
+  try{ await updateRow("vehicles", updated); } catch(e){ queuePending({type:"update", table:"vehicles", obj:updated}); }
+}
+async function deleteVehicle(id){
+  if(!confirm("¿Eliminar este vehículo y todo su historial?")) return;
+  const related = state.records.filter(r=>r.vehicleId===id);
+  state.vehicles = state.vehicles.filter(v=>v.id!==id);
+  state.records = state.records.filter(r=>r.vehicleId!==id);
+  saveCache();
+  const wasSelected = state.selectedId===id;
+  set({ selectedId: wasSelected ? (state.vehicles[0]?.id || null) : state.selectedId });
+  try{ await deleteRowRemote("vehicles", id); } catch(e){ queuePending({type:"delete", table:"vehicles", id}); }
+  for(const r of related){
+    try{ await deleteRowRemote("records", r.id); } catch(e){ queuePending({type:"delete", table:"records", id:r.id}); }
+  }
+}
+async function addRecord(r){
+  state.records = [...state.records, r];
+  saveCache();
+  set({ showRecordForm:false });
+  try{ await insertRow("records", r); } catch(e){ queuePending({type:"insert", table:"records", obj:r}); }
+}
+async function updateRecordFn(r){
+  state.records = state.records.map(x=>x.id===r.id?r:x);
+  saveCache();
+  set({ showRecordForm:false, editingRecord:null });
+  try{ await updateRow("records", r); } catch(e){ queuePending({type:"update", table:"records", obj:r}); }
+}
+async function deleteRecord(id){
+  state.records = state.records.filter(r=>r.id!==id);
+  saveCache();
+  render();
+  try{ await deleteRowRemote("records", id); } catch(e){ queuePending({type:"delete", table:"records", id}); }
+}
+async function clearAviso(id){
+  const r = state.records.find(x=>x.id===id);
+  if(!r) return;
+  const updated = {...r, avisoKms: null};
+  state.records = state.records.map(x=>x.id===id?updated:x);
+  saveCache();
+  render();
+  try{ await updateRow("records", updated); } catch(e){ queuePending({type:"update", table:"records", obj:updated}); }
+}
+
+
+function exportExcel(){
+  const wb = XLSX.utils.book_new();
+  const vSheet = state.vehicles.map(v=>({
+    "Matrícula": v.matricula||"", "Marca": v.marca||"", "Modelo": v.modelo||"",
+    "Motor": v.motor||"", "CV": v.cv||"", "Bastidor": v.bastidor||"",
+    "Año matriculación": v.anoMatriculacion||"", "Kms al adquirirlo": v.kmsAdquisicion||"",
+    "Fecha ITV": v.itv||"", "Fecha seguro": v.seguro||"",
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(vSheet), "Vehículos");
+  const byId = Object.fromEntries(state.vehicles.map(v=>[v.id,v]));
+  const hSheet = state.records.slice().sort((a,b)=>new Date(a.fecha)-new Date(b.fecha)).map(r=>{
+    const v = byId[r.vehicleId];
+    const base = { "Matrícula": v?.matricula||"", "Tipo": r.type==="repostaje"?"Repostaje":r.type==="reparacion"?"Reparación":"Mantenimiento", "Fecha": r.fecha||"", "Kms": r.kms??"" };
+    if(r.type==="repostaje"){
+      return {...base, "Combustible": r.combustible||"", "Litros": r.litros??"", "Precio/litro": r.precioLitro??"", "Importe total": r.importeTotal??"", "Consumo (L/100km)": r.consumo? Number(r.consumo.toFixed(2)):"" };
+    }
+    return {...base, "Descripción": r.descripcion||r.tipo||"", "Importe": r.coste??"", "Aviso en kms": r.avisoKms??"" };
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(hSheet), "Historial");
+  XLSX.writeFile(wb, `cuaderno-de-ruta_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ---------- Render ----------
+function renderAuth(){
+  const app = document.getElementById("app");
+  app.innerHTML = `
+    <div style="min-height:90vh;display:flex;align-items:center;justify-content:center;">
+      <div class="card" style="width:100%;max-width:340px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;margin-bottom:6px;">
+          <div style="font-size:22px;">📊</div>
+          <h1 style="font-size:19px;">Cuaderno de Ruta</h1>
+          <p class="sub">${state.authMode==="login" ? "Inicia sesión para ver tus vehículos" : "Crea una cuenta para guardar tus datos"}</p>
+        </div>
+        <label style="margin-top:10px;">Email<input id="auth_email" type="email" placeholder="tucorreo@ejemplo.com"></label>
+        <label style="margin-top:8px;">Contraseña<input id="auth_password" type="password" placeholder="Mínimo 6 caracteres"></label>
+        ${state.authError ? `<p style="color:#d1495b;font-size:12px;margin-top:8px;">${esc(state.authError)}</p>` : ""}
+        ${state.authInfo ? `<p style="color:#4f9d8f;font-size:12px;margin-top:8px;">${esc(state.authInfo)}</p>` : ""}
+        <button class="btn btn-amber" style="width:100%;justify-content:center;margin-top:12px;" ${state.authLoading?'disabled':''} onclick="${state.authMode==='login'?'doSignIn()':'doSignUp()'}">
+          ${state.authLoading ? "Un momento…" : (state.authMode==='login' ? "Iniciar sesión" : "Crear cuenta")}
+        </button>
+        <button class="chip" style="width:100%;justify-content:center;margin-top:10px;border:none;" onclick="set({authMode: state.authMode==='login'?'signup':'login', authError:null, authInfo:null})">
+          ${state.authMode==='login' ? "¿No tienes cuenta? Regístrate" : "¿Ya tienes cuenta? Inicia sesión"}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function render(){
+  if(!state.session){ renderAuth(); return; }
+  if(state.loadingData){
+    document.getElementById("app").innerHTML = `<div style="min-height:90vh;display:flex;align-items:center;justify-content:center;color:var(--inkDim);">Cargando cuaderno de ruta…</div>`;
+    return;
+  }
+  const app = document.getElementById("app");
+  const vehicle = state.vehicles.find(v=>v.id===state.selectedId);
+  const vehicleRecords = state.records.filter(r=>r.vehicleId===state.selectedId).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  const fuelRecords = vehicleRecords.filter(r=>r.type==="repostaje").sort((a,b)=>a.kms-b.kms);
+  const lastFuel = fuelRecords.length ? fuelRecords[fuelRecords.length-1] : null;
+  const withConsumo = fuelRecords.filter(r=>r.consumo);
+  const avgConsumo = withConsumo.length ? withConsumo.reduce((s,r)=>s+r.consumo,0)/withConsumo.length : null;
+  const currentKm = lastFuel ? lastFuel.kms : (vehicle&&vehicle.kmsAdquisicion ? Number(vehicle.kmsAdquisicion) : null);
+  const dueReminders = (currentKm!=null && vehicle) ? vehicleRecords.filter(r=>(r.type==='reparacion'||r.type==='mantenimiento') && r.avisoKms && currentKm>=r.avisoKms) : [];
+
+  let html = `
+    <div class="header">
+      <div>
+        <h1>Cuaderno de Ruta</h1>
+        <p class="sub">Repostajes, reparaciones y mantenimiento de tus vehículos</p>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="exportExcel()">⬇ Exportar</button>
+        <button class="btn btn-ghost btn-sm" onclick="doLogout()">Salir</button>
+      </div>
+    </div>
+    <p class="sub" style="margin-top:-14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+      <span>Sesión: ${esc(state.session.user?.email || "")}</span>
+      <span style="color:${pendingQueue.length ? 'var(--amber)' : '#4f9d8f'};">
+        ${pendingQueue.length ? `⏳ ${pendingQueue.length} cambio${pendingQueue.length>1?'s':''} por subir` : "☁ Todo guardado en la nube"}
+      </span>
+    </p>
+    <div class="row">
+      ${state.vehicles.map(v=>`
+        <button class="plate ${v.id===state.selectedId?'active':''}" onclick="set({selectedId:'${v.id}'})">
+          <div class="plate-blue"></div>
+          <div class="plate-body">
+            <div class="plate-num">${esc(v.matricula||"SIN MATR.")}</div>
+            <div class="plate-sub">${esc(v.marca||"")} ${esc(v.modelo||"")}</div>
+          </div>
+        </button>`).join("")}
+      <button class="plate-add" onclick="set({showVehicleForm:true, editingVehicle:null})">+ <span>Añadir</span></button>
+    </div>
+  `;
+
+  if(state.showVehicleForm){
+    html += renderVehicleForm(state.editingVehicle);
+  }
+
+  if(vehicle && !state.showVehicleForm){
+    const itvDays = daysUntil(vehicle.itv);
+    const segDays = daysUntil(vehicle.seguro);
+    html += `
+      <div class="card">
+        <div class="detail-top">
+          <h2>${esc(vehicle.marca)} ${esc(vehicle.modelo)}</h2>
+          <div style="display:flex;gap:10px;">
+            <button class="icon-btn" onclick="set({showVehicleForm:true, editingVehicle: state.vehicles.find(v=>v.id==='${vehicle.id}')})">✎</button>
+            <button class="icon-btn" onclick="deleteVehicle('${vehicle.id}')">🗑</button>
+          </div>
+        </div>
+        <div class="detail-grid">
+          <div><span class="dim">Motor: </span>${esc(vehicle.motor)||"—"}</div>
+          <div><span class="dim">CV: </span>${esc(vehicle.cv)||"—"}</div>
+          <div><span class="dim">Año matriculación: </span>${esc(vehicle.anoMatriculacion)||"—"}</div>
+          <div><span class="dim">Kms al adquirirlo: </span>${vehicle.kmsAdquisicion? Number(vehicle.kmsAdquisicion).toLocaleString("es-ES"):"—"}</div>
+          <div><span class="dim">Bastidor: </span>${esc(vehicle.bastidor)||"—"}</div>
+          <div><span class="dim">Kms último: </span>${lastFuel? lastFuel.kms.toLocaleString("es-ES"):"—"}</div>
+        </div>
+        <div style="display:flex;gap:16px;margin-top:10px;font-size:13px;flex-wrap:wrap;">
+          <div class="${itvDays!==null && itvDays<30 ? 'datewarn':'dim'}">📅 ITV: ${fmtDate(vehicle.itv)}${itvDays!==null&&itvDays<30&&itvDays>=0?` (${itvDays}d)`:''}</div>
+          <div class="${segDays!==null && segDays<30 ? 'datewarn':'dim'}">🛡 Seguro: ${fmtDate(vehicle.seguro)}${segDays!==null&&segDays<30&&segDays>=0?` (${segDays}d)`:''}</div>
+        </div>
+        <div class="gauge-wrap">
+          ${gaugeSvg(avgConsumo)}
+          <span class="sub">media de ${fuelRecords.length} repostaje${fuelRecords.length!==1?'s':''}</span>
+        </div>
+      </div>
+    `;
+
+    if(dueReminders.length){
+      html += `
+        <div class="card" style="border-color:var(--rust);">
+          <h3 style="color:var(--rust);text-transform:uppercase;font-size:11px;letter-spacing:.05em;">⚠ Avisos pendientes</h3>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+            ${dueReminders.map(r=>`
+              <div class="banner">
+                <span>${esc(r.descripcion||'Mantenimiento')} — tocaba a los ${Number(r.avisoKms).toLocaleString("es-ES")} km (llevas ${Number(currentKm).toLocaleString("es-ES")} km)</span>
+                <button class="btn btn-sm btn-ghost" onclick="clearAviso('${r.id}')">Hecho</button>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    if(state.showRecordForm){
+      html += renderRecordForm(vehicle, fuelRecords, state.editingRecord);
+    } else {
+      html += `<button class="btn btn-amber" style="align-self:flex-start;" onclick="openRecordForm(null)">+ Nuevo registro</button>`;
+    }
+
+    const filtered = state.historyFilter==="todos" ? vehicleRecords : vehicleRecords.filter(r=>r.type===state.historyFilter);
+    html += `
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+          <h3>Historial</h3>
+          <div class="filters">
+            ${["todos","repostaje","reparacion","mantenimiento"].map(f=>`
+              <button class="chip ${state.historyFilter===f?'active':''}" onclick="set({historyFilter:'${f}'})">${f}</button>
+            `).join("")}
+          </div>
+        </div>
+        ${filtered.length===0 ? `<div class="empty">Aún no hay registros. Añade el primero arriba.</div>` :
+          filtered.map(r=>`
+            <div class="history-item">
+              <div class="history-left">
+                <div class="icon-dot" style="background:${r.type==='repostaje'?'#3a2e05':r.type==='reparacion'?'#3a1f22':'#183a35'};color:${r.type==='repostaje'?'#f2a900':r.type==='reparacion'?'#d1495b':'#4f9d8f'}">${r.type==='repostaje'?'⛽':r.type==='reparacion'?'🔧':'🛡'}</div>
+                <div>
+                  <div style="font-size:14px;font-weight:600;">${r.type==='repostaje'?`${esc(r.litros)} L · ${esc(r.combustible)}`:`<span class="trunc1" style="max-width:160px;">${esc(r.descripcion || r.tipo || '—')}</span>`}</div>
+                  <div class="sub">${fmtDate(r.fecha)}${r.kms?` · ${Number(r.kms).toLocaleString("es-ES")} km`:''}</div>
+                </div>
+              </div>
+              <div style="text-align:right;display:flex;align-items:center;gap:10px;">
+                <div>
+                  <div style="font-family:monospace;font-weight:700;font-size:14px;">${euros(r.type==='repostaje'?r.importeTotal:r.coste)}</div>
+                  ${r.type==='repostaje'&&r.consumo?`<div class="sub">${r.consumo.toFixed(1)} L/100km</div>`:''}
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <button class="icon-btn" onclick='openRecordForm(state.records.find(x=>x.id==="${r.id}"))'>✎</button>
+                  <button class="icon-btn" onclick="deleteRecord('${r.id}')">🗑</button>
+                </div>
+              </div>
+            </div>
+          `).join("")
+        }
+      </div>
+    `;
+  }
+
+  if(!vehicle && !state.showVehicleForm){
+    html += `
+      <div class="card" style="text-align:center;border-style:dashed;">
+        <p class="dim">Añade tu primer vehículo para empezar a registrar repostajes, reparaciones y mantenimiento.</p>
+        <button class="btn btn-amber" onclick="set({showVehicleForm:true})">+ Añadir vehículo</button>
+      </div>
+    `;
+  }
+
+  app.innerHTML = html;
+}
+
+function gaugeSvg(value){
+  const max=15;
+  const pct = Math.max(0, Math.min(1, (value||0)/max));
+  const angle = pct*180;
+  const r=70, cx=90, cy=90;
+  const toXY = deg => { const rad = Math.PI*(180-deg)/180; return [cx+r*Math.cos(rad), cy-r*Math.sin(rad)]; };
+  const [nx,ny] = toXY(angle);
+  const largeArc = angle>180?1:0;
+  return `<svg width="180" height="110" viewBox="0 0 180 110">
+    <path d="M 20 90 A 70 70 0 0 1 160 90" fill="none" stroke="#2c3135" stroke-width="12" stroke-linecap="round"/>
+    <path d="M 20 90 A 70 70 0 ${largeArc} 1 ${nx} ${ny}" fill="none" stroke="#f2a900" stroke-width="12" stroke-linecap="round"/>
+    <text x="90" y="80" text-anchor="middle" font-size="26" font-weight="700" fill="#eae7df">${value?value.toFixed(1):"—"}</text>
+    <text x="90" y="98" text-anchor="middle" font-size="10" fill="#9a9d9f">L/100km</text>
+  </svg>`;
+}
+
+function renderVehicleForm(v){
+  v = v || {};
+  return `
+    <div class="card">
+      <div class="detail-top"><h2>${v.id?'Editar vehículo':'Nuevo vehículo'}</h2>
+        <button class="icon-btn" onclick="set({showVehicleForm:false, editingVehicle:null})">✕</button>
+      </div>
+      <div class="grid2" style="margin-top:12px;">
+        <label>Marca<input id="f_marca" value="${esc(v.marca)}" placeholder="Renault"></label>
+        <label>Modelo<input id="f_modelo" value="${esc(v.modelo)}" placeholder="Kangoo"></label>
+        <label>Motor<input id="f_motor" value="${esc(v.motor)}" placeholder="1.5 dCi"></label>
+        <label>CV<input id="f_cv" type="number" value="${esc(v.cv)}" placeholder="90"></label>
+        <label>Matrícula<input id="f_matricula" value="${esc(v.matricula)}" placeholder="1234 ABC" style="text-transform:uppercase;"></label>
+        <label>Bastidor (VIN)<input id="f_bastidor" value="${esc(v.bastidor)}" placeholder="VF1..."></label>
+        <label>Año de matriculación<input id="f_ano" type="number" value="${esc(v.anoMatriculacion)}" placeholder="2018"></label>
+        <label>Kms al adquirirlo<input id="f_kmsadq" type="number" value="${esc(v.kmsAdquisicion)}" placeholder="45000"></label>
+        <label>Fecha ITV<input id="f_itv" type="date" value="${esc(v.itv)}"></label>
+        <label>Fecha seguro<input id="f_seguro" type="date" value="${esc(v.seguro)}"></label>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost" onclick="set({showVehicleForm:false, editingVehicle:null})">Cancelar</button>
+        <button class="btn btn-amber" onclick="submitVehicleForm(${v.id?`'${v.id}'`:'null'})">Guardar vehículo</button>
+      </div>
+    </div>
+  `;
+}
+function submitVehicleForm(editingId){
+  const form = {
+    marca: document.getElementById("f_marca").value,
+    modelo: document.getElementById("f_modelo").value,
+    motor: document.getElementById("f_motor").value,
+    cv: document.getElementById("f_cv").value,
+    matricula: document.getElementById("f_matricula").value.toUpperCase(),
+    bastidor: document.getElementById("f_bastidor").value,
+    anoMatriculacion: document.getElementById("f_ano").value,
+    kmsAdquisicion: document.getElementById("f_kmsadq").value,
+    itv: document.getElementById("f_itv").value,
+    seguro: document.getElementById("f_seguro").value,
+  };
+  if(!form.marca || !form.matricula){ alert("Marca y matrícula son obligatorias"); return; }
+  if(editingId) updateVehicle(form); else addVehicle(form);
+}
+
+let recordType = "repostaje";
+let aiReceiptFile = null, aiDashFile = null, aiLoading = false, aiError = null, aiFilled = false;
+let voiceState = { listening:false, transcript:"", loading:false, error:null, filled:false };
+let recognitionInstance = null;
+
+function getRecognition(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR) return null;
+  if(!recognitionInstance){
+    recognitionInstance = new SR();
+    recognitionInstance.lang = "es-ES";
+    recognitionInstance.continuous = false;
+    recognitionInstance.interimResults = true;
+  }
+  return recognitionInstance;
+}
+
+function startVoice(kind){
+  const rec = getRecognition();
+  if(!rec){ voiceState = { listening:false, transcript:"", loading:false, filled:false, error:"Tu navegador no admite dictado por voz. Pruébalo con Chrome en Android." }; render(); return; }
+  voiceState = { listening:true, transcript:"", loading:false, error:null, filled:false };
+  render();
+  rec.onresult = (e) => {
+    let t = "";
+    for(let i=0;i<e.results.length;i++) t += e.results[i][0].transcript;
+    voiceState.transcript = t;
+    render();
+  };
+  rec.onerror = (e) => {
+    voiceState = { ...voiceState, listening:false, error: e.error==="no-speech" ? "No se ha detectado voz, inténtalo otra vez." : "No se pudo usar el micrófono ("+e.error+")." };
+    render();
+  };
+  rec.onend = () => {
+    voiceState.listening = false;
+    if(voiceState.transcript.trim()) processVoice(kind); else render();
+  };
+  try{ rec.start(); } catch(e){ voiceState = { ...voiceState, listening:false, error:"No se pudo iniciar el micrófono." }; render(); }
+}
+
+async function processVoice(kind){
+  voiceState.loading = true; render();
+  try{
+    const res = await fetch("/analyze-voice", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transcript: voiceState.transcript, recordType: kind }),
+    });
+    const result = await res.json();
+    if(!res.ok) throw new Error(result.error || "No se pudo interpretar el dictado");
+
+    if(kind==="repostaje"){
+      if(result.fecha) document.getElementById("r_fecha").value = result.fecha;
+      if(result.kms != null) document.getElementById("r_kms").value = result.kms;
+      if(result.combustible && FUEL_TYPES.includes(result.combustible)) document.getElementById("r_combustible").value = result.combustible;
+      if(result.litros != null) document.getElementById("r_litros").value = result.litros;
+      if(result.precioLitro != null) document.getElementById("r_precio").value = result.precioLitro;
+      if(result.importeTotal != null) document.getElementById("r_importe").value = result.importeTotal;
+      updateConsumoPreview();
+    } else {
+      if(result.fecha) document.getElementById("r_fecha").value = result.fecha;
+      if(result.kms != null) document.getElementById("r_kms").value = result.kms;
+      if(result.descripcion) document.getElementById("r_descripcion").value = result.descripcion;
+      if(result.coste != null) document.getElementById("r_coste").value = result.coste;
+      if(result.avisoKms != null) document.getElementById("r_aviso").value = result.avisoKms;
+    }
+    voiceState.filled = true;
+  } catch(e){
+    voiceState.error = e.message || "No se pudo interpretar el dictado.";
+  } finally {
+    voiceState.loading = false; render();
+  }
+}
+window.startVoice = startVoice;
+
+function fileToBase64(file){
+  // Redimensiona y comprime la imagen antes de enviarla, para no superar
+  // el límite de tamaño de las funciones de Netlify (fotos de móvil sin tocar
+  // suelen pesar 3-6 MB, y con dos imágenes se supera fácilmente el límite).
+  const MAX_DIM = 1600;
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if(width > MAX_DIM || height > MAX_DIM){
+          const scale = MAX_DIM / Math.max(width, height);
+          width = Math.round(width*scale); height = Math.round(height*scale);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width; canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.72);
+        resolve(dataUrl.split(",")[1]);
+      };
+      img.onerror = () => reject(new Error("No se pudo procesar la imagen"));
+      img.src = reader.result;
+    };
+    reader.onerror = () => reject(new Error("No se pudo leer la imagen"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function onPhotoSelected(which, input){
+  const file = input.files?.[0] || null;
+  if(which === "receipt") aiReceiptFile = file; else aiDashFile = file;
+  render();
+}
+
+async function runAI(){
+  if(!aiReceiptFile && !aiDashFile) return;
+  aiLoading = true; aiError = null; aiFilled = false; render();
+  try{
+    const body = {};
+    if(aiReceiptFile){ body.receiptImage = await fileToBase64(aiReceiptFile); body.receiptType = "image/jpeg"; }
+    if(aiDashFile){ body.dashImage = await fileToBase64(aiDashFile); body.dashType = "image/jpeg"; }
+    const res = await fetch("/analyze-fuel", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+    });
+    const result = await res.json();
+    if(!res.ok) throw new Error(result.error || "Error al leer las imágenes");
+
+    if(result.fecha) document.getElementById("r_fecha").value = result.fecha;
+    if(result.kms != null) document.getElementById("r_kms").value = result.kms;
+    if(result.combustible && FUEL_TYPES.includes(result.combustible)) document.getElementById("r_combustible").value = result.combustible;
+    if(result.litros != null) document.getElementById("r_litros").value = result.litros;
+    if(result.precioLitro != null) document.getElementById("r_precio").value = result.precioLitro;
+    if(result.importeTotal != null) document.getElementById("r_importe").value = result.importeTotal;
+    updateConsumoPreview();
+    aiFilled = true;
+  } catch(e){
+    aiError = e.message || "No se pudieron leer las imágenes. Rellena los datos a mano.";
+  } finally {
+    aiLoading = false; render();
+  }
+}
+
+function openRecordForm(editing){
+  aiReceiptFile = null; aiDashFile = null; aiLoading = false; aiError = null; aiFilled = false;
+  voiceState = { listening:false, transcript:"", loading:false, error:null, filled:false };
+  set({ showRecordForm:true, editingRecord: editing || null });
+}
+window.openRecordForm = openRecordForm;
+
+function renderRecordForm(vehicle, fuelRecords, editing){
+  recordType = editing ? editing.type : recordType;
+  const today = new Date().toISOString().slice(0,10);
+  const otherFuel = editing ? fuelRecords.filter(r=>r.id!==editing.id) : fuelRecords;
+  const f = editing && editing.type==="repostaje" ? editing : null;
+  const w = editing && editing.type!=="repostaje" ? editing : null;
+  return `
+    <div class="card">
+      <div class="detail-top"><h2 style="font-size:15px;">${editing?'Editar registro':'Nuevo registro'} — ${esc(vehicle.matricula)}</h2>
+        <button class="icon-btn" onclick="set({showRecordForm:false, editingRecord:null})">✕</button>
+      </div>
+      <div class="tabs" style="margin-top:12px;">
+        <div class="tab ${recordType==='repostaje'?'active':''}" onclick="recordType='repostaje';render()">⛽ Repostaje</div>
+        <div class="tab ${recordType==='reparacion'?'active':''}" onclick="recordType='reparacion';render()">🔧 Reparación</div>
+        <div class="tab ${recordType==='mantenimiento'?'active':''}" onclick="recordType='mantenimiento';render()">🛡 Mantenimiento</div>
+      </div>
+      <div id="record-fields" data-other-fuel='${esc(JSON.stringify(otherFuel.map(r=>({kms:r.kms}))))}'>
+        ${recordType==='repostaje' ? `
+          <div class="grid2">
+            <div class="photo-box">
+              <div class="sub" style="text-transform:uppercase;font-size:10px;">✨ Rellenar con fotos (IA)</div>
+              <div style="display:flex;gap:10px;">
+                <label class="photo-btn ${aiReceiptFile?'filled':''}">
+                  📷 ${aiReceiptFile ? "Ticket ✓" : "Foto del ticket"}
+                  <input type="file" accept="image/*" style="display:none;" onchange="onPhotoSelected('receipt', this)">
+                </label>
+                <label class="photo-btn ${aiDashFile?'filled':''}">
+                  📷 ${aiDashFile ? "Cuadro ✓" : "Foto del cuadro"}
+                  <input type="file" accept="image/*" style="display:none;" onchange="onPhotoSelected('dash', this)">
+                </label>
+              </div>
+              <button class="btn btn-amber" style="width:100%;justify-content:center;" ${aiLoading||(!aiReceiptFile&&!aiDashFile)?'disabled':''} onclick="runAI()">
+                ${aiLoading ? "Leyendo imágenes…" : "✨ Leer datos con IA"}
+              </button>
+              ${aiFilled && !aiLoading ? `<p style="color:#4f9d8f;font-size:11px;">Datos rellenados abajo — revísalos antes de guardar.</p>` : ""}
+              ${aiError ? `<p style="color:#d1495b;font-size:11px;">${esc(aiError)}</p>` : ""}
+              <div style="border-top:1px solid var(--border);padding-top:10px;">
+                <button class="btn ${voiceState.listening?'btn-danger':'btn-ghost'}" style="width:100%;justify-content:center;" ${voiceState.loading?'disabled':''} onclick="startVoice('repostaje')">
+                  ${voiceState.listening ? "🔴 Escuchando… habla ahora" : voiceState.loading ? "Interpretando…" : "🎤 O dilo por voz"}
+                </button>
+                ${voiceState.transcript && !voiceState.filled ? `<p class="sub" style="font-style:italic;margin-top:6px;">"${esc(voiceState.transcript)}"</p>` : ""}
+                ${voiceState.filled && !voiceState.loading ? `<p style="color:#4f9d8f;font-size:11px;margin-top:6px;">Datos rellenados por voz — revísalos abajo.</p>` : ""}
+                ${voiceState.error ? `<p style="color:#d1495b;font-size:11px;margin-top:6px;">${esc(voiceState.error)}</p>` : ""}
+              </div>
+            </div>
+            <label>Fecha<input id="r_fecha" type="date" value="${f?f.fecha:today}"></label>
+            <label>Kms actuales<input id="r_kms" type="number" value="${f?f.kms:''}" oninput="updateConsumoPreview()" placeholder="0"></label>
+            <label>Combustible<select id="r_combustible">${FUEL_TYPES.map(fu=>`<option ${f&&f.combustible===fu?'selected':''}>${fu}</option>`).join("")}</select></label>
+            <label>Litros<input id="r_litros" type="number" step="0.01" value="${f?f.litros:''}" oninput="updateImporte();updateConsumoPreview()"></label>
+            <label>Precio/litro (€)<input id="r_precio" type="number" step="0.001" value="${f?f.precioLitro:''}" oninput="updateImporte()"></label>
+            <label>Importe total (€)<input id="r_importe" type="number" step="0.01" value="${f?f.importeTotal:''}"></label>
+            <div class="consumo-box"><span class="dim" style="text-transform:uppercase;font-size:10px;">Consumo medio</span><span id="consumo-preview" style="color:#f2a900;font-family:monospace;font-weight:700;">${f&&f.consumo?f.consumo.toFixed(2)+' L/100km':'introduce kms y litros'}</span></div>
+          </div>` : `
+          <div class="photo-box" style="margin-bottom:10px;">
+            <div class="sub" style="text-transform:uppercase;font-size:10px;">✨ Rellenar por voz (IA)</div>
+            <button class="btn ${voiceState.listening?'btn-danger':'btn-ghost'}" style="width:100%;justify-content:center;" ${voiceState.loading?'disabled':''} onclick="startVoice('${recordType}')">
+              ${voiceState.listening ? "🔴 Escuchando… habla ahora" : voiceState.loading ? "Interpretando…" : "🎤 Dictar registro"}
+            </button>
+            ${voiceState.transcript && !voiceState.filled ? `<p class="sub" style="font-style:italic;margin-top:6px;">"${esc(voiceState.transcript)}"</p>` : ""}
+            ${voiceState.filled && !voiceState.loading ? `<p style="color:#4f9d8f;font-size:11px;margin-top:6px;">Datos rellenados por voz — revísalos abajo.</p>` : ""}
+            ${voiceState.error ? `<p style="color:#d1495b;font-size:11px;margin-top:6px;">${esc(voiceState.error)}</p>` : ""}
+          </div>
+          <div class="grid2">
+            <label>Fecha<input id="r_fecha" type="date" value="${w?w.fecha:today}"></label>
+            <label>Kms<input id="r_kms" type="number" value="${w&&w.kms?w.kms:''}" placeholder="0"></label>
+            <label style="grid-column:1/-1;">Descripción<textarea id="r_descripcion" rows="3" placeholder="Qué se hizo, materiales, mano de obra…">${esc(w?(w.descripcion??w.tipo):'')}</textarea></label>
+            <label>Importe (€)<input id="r_coste" type="number" step="0.01" value="${w?w.coste:''}"></label>
+            <label>Aviso en kms <span style="text-transform:none;">(opcional)</span><input id="r_aviso" type="number" value="${w&&w.avisoKms?w.avisoKms:''}" placeholder="ej. 95000"></label>
+          </div>`
+        }
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost" onclick="set({showRecordForm:false, editingRecord:null})">Cancelar</button>
+        <button class="btn btn-amber" onclick="submitRecordForm('${vehicle.id}')">Guardar registro</button>
+      </div>
+    </div>
+  `;
+}
+function getOtherFuel(){
+  try{ return JSON.parse(document.getElementById("record-fields").dataset.otherFuel); } catch(e){ return []; }
+}
+function findPrevRecord(km){
+  const others = getOtherFuel().filter(r=>r.kms < km);
+  if(!others.length) return null;
+  return others.reduce((a,b)=> b.kms>a.kms?b:a);
+}
+function updateImporte(){
+  const l = parseFloat(document.getElementById("r_litros").value);
+  const p = parseFloat(document.getElementById("r_precio").value);
+  if(l>0 && p>0) document.getElementById("r_importe").value = (l*p).toFixed(2);
+}
+function updateConsumoPreview(){
+  const el = document.getElementById("consumo-preview");
+  if(!el) return;
+  const km = parseFloat(document.getElementById("r_kms").value);
+  const l = parseFloat(document.getElementById("r_litros").value);
+  const prev = km ? findPrevRecord(km) : null;
+  if(!prev){ el.textContent = "sin repostaje previo"; return; }
+  if(!km || !l){ el.textContent = "introduce kms y litros"; return; }
+  const c = (l/(km-prev.kms))*100;
+  el.textContent = c.toFixed(2)+" L/100km";
+}
+function submitRecordForm(vehicleId){
+  const fecha = document.getElementById("r_fecha").value;
+  const editing = state.editingRecord;
+  if(recordType==='repostaje'){
+    const kms = parseFloat(document.getElementById("r_kms").value);
+    const litros = parseFloat(document.getElementById("r_litros").value);
+    const precioLitro = parseFloat(document.getElementById("r_precio").value);
+    const importeTotal = parseFloat(document.getElementById("r_importe").value) || (litros*precioLitro);
+    if(!kms || !litros || !precioLitro){ alert("Rellena kms, litros y precio"); return; }
+    const prev = findPrevRecord(kms);
+    const consumo = prev ? (litros/(kms-prev.kms))*100 : null;
+    const record = { id: editing?editing.id:uid(), vehicleId, type:"repostaje", fecha, kms, combustible:document.getElementById("r_combustible").value, litros, precioLitro, importeTotal, consumo };
+    editing ? updateRecordFn(record) : addRecord(record);
+  } else {
+    const coste = parseFloat(document.getElementById("r_coste").value);
+    const descripcion = document.getElementById("r_descripcion").value.trim();
+    if(!coste){ alert("Indica el importe"); return; }
+    if(!descripcion){ alert("Añade una descripción"); return; }
+    const kmsVal = document.getElementById("r_kms").value;
+    const avisoVal = document.getElementById("r_aviso").value;
+    const record = { id: editing?editing.id:uid(), vehicleId, type:recordType, fecha, kms: kmsVal?parseFloat(kmsVal):null, descripcion, coste, avisoKms: avisoVal?parseFloat(avisoVal):null };
+    editing ? updateRecordFn(record) : addRecord(record);
+  }
+}
+
+window.set = set;
+window.exportExcel = exportExcel;
+window.deleteVehicle = deleteVehicle;
+window.submitVehicleForm = submitVehicleForm;
+window.submitRecordForm = submitRecordForm;
+window.updateImporte = updateImporte;
+window.updateConsumoPreview = updateConsumoPreview;
+window.deleteRecord = deleteRecord;
+window.clearAviso = clearAviso;
+window.doSignUp = doSignUp;
+window.doSignIn = doSignIn;
+window.doLogout = doLogout;
+window.onPhotoSelected = onPhotoSelected;
+window.runAI = runAI;
+window.render = render;
+
+if(state.session){ loadAllData(); } else { render(); }
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
